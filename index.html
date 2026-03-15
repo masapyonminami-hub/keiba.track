@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>馬券帳 | 競馬収支トラッカー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;600;700&family=Bebas+Neue&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0a08;
+    --bg2: #1a1410;
+    --bg3: #241e18;
+    --gold: #c9a84c;
+    --gold2: #e8c96a;
+    --red: #cc3333;
+    --green: #2e8b57;
+    --text: #f0e8d8;
+    --text2: #a09078;
+    --border: #3a3020;
+    --accent: #8b1a1a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(201,168,76,0.04) 39px, rgba(201,168,76,0.04) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(201,168,76,0.04) 39px, rgba(201,168,76,0.04) 40px);
+  }
+
+  header {
+    background: linear-gradient(135deg, #1a0a0a 0%, #0d0a08 50%, #0a0d08 100%);
+    border-bottom: 2px solid var(--gold);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '🏇';
+    position: absolute;
+    font-size: 120px;
+    opacity: 0.05;
+    right: 20px;
+    top: -20px;
+  }
+  .header-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+  }
+  .header-sub {
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 0.3em;
+    margin-top: 4px;
+  }
+
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 20px;
+  }
+
+  /* Stats Cards */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--gold);
+    padding: 20px;
+    border-radius: 2px;
+    position: relative;
+    transition: transform 0.2s;
+  }
+  .stat-card:hover { transform: translateY(-2px); }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: var(--text2);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .stat-value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    letter-spacing: 0.05em;
+    line-height: 1;
+  }
+  .stat-value.positive { color: var(--gold2); }
+  .stat-value.negative { color: var(--red); }
+  .stat-value.neutral { color: var(--text); }
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text2);
+    margin-top: 6px;
+  }
+
+  /* Form Section */
+  .section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+  .section-header {
+    background: var(--bg3);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title {
+    font-family: 'Noto Serif JP', serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+  }
+  .section-body { padding: 24px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr 1fr;
+    gap: 12px;
+    align-items: end;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.wide { grid-column: span 2; }
+  label {
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--text2);
+    text-transform: uppercase;
+  }
+  input, select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 12px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 13px;
+    border-radius: 2px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  input:focus, select:focus { border-color: var(--gold); }
+  select option { background: var(--bg2); }
+
+  .btn-add {
+    background: var(--gold);
+    color: #0d0a08;
+    border: none;
+    padding: 10px 24px;
+    font-family: 'Noto Serif JP', serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+  }
+  .btn-add:hover { background: var(--gold2); transform: scale(1.02); }
+
+  /* Table */
+  .table-wrap { overflow-x: auto; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    background: var(--bg3);
+    border-bottom: 2px solid var(--gold);
+  }
+  th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    color: var(--gold);
+    font-weight: 500;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    white-space: nowrap;
+  }
+  tr:hover td { background: rgba(201,168,76,0.04); }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+  }
+  .badge-win { background: rgba(46,139,87,0.2); color: #4ecca3; border: 1px solid rgba(46,139,87,0.4); }
+  .badge-loss { background: rgba(204,51,51,0.15); color: #e07070; border: 1px solid rgba(204,51,51,0.3); }
+  .amount-pos { color: #4ecca3; font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.05em; }
+  .amount-neg { color: #e07070; font-family: 'Bebas Neue', sans-serif; font-size: 15px; letter-spacing: 0.05em; }
+  .btn-del {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 4px 10px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+  .btn-del:hover { border-color: var(--red); color: var(--red); }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--text2);
+    font-size: 13px;
+    letter-spacing: 0.2em;
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Chart */
+  .chart-container {
+    position: relative;
+    height: 180px;
+    padding: 16px 0 8px;
+  }
+  canvas { width: 100% !important; }
+
+  /* Month Filter */
+  .filter-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-bar label { font-size: 11px; color: var(--text2); letter-spacing: 0.2em; }
+  .filter-bar select { width: auto; }
+
+  @media (max-width: 768px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .form-group.wide { grid-column: span 2; }
+    header { padding: 16px 20px; }
+    .header-title { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">馬　券　帳</div>
+    <div class="header-sub">KEIBA TRACKER — 収支管理システム</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">総収支</div>
+      <div class="stat-value" id="totalPL">¥0</div>
+      <div class="stat-sub" id="totalPLSub">全期間</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">回収率</div>
+      <div class="stat-value neutral" id="roi">—</div>
+      <div class="stat-sub">投資額対回収</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">的中率</div>
+      <div class="stat-value neutral" id="hitRate">—</div>
+      <div class="stat-sub" id="hitCount">0勝 / 0戦</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">投資総額</div>
+      <div class="stat-value neutral" id="totalBet">¥0</div>
+      <div class="stat-sub" id="betCount">0回</div>
+    </div>
+  </div>
+
+  <!-- Chart -->
+  <div class="section">
+    <div class="section-header">
+      <span>📈</span>
+      <span class="section-title">収支推移</span>
+    </div>
+    <div class="section-body">
+      <div class="chart-container">
+        <canvas id="chartCanvas"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Form -->
+  <div class="section">
+    <div class="section-header">
+      <span>✏️</span>
+      <span class="section-title">馬券を記録する</span>
+    </div>
+    <div class="section-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>日付</label>
+          <input type="date" id="fDate">
+        </div>
+        <div class="form-group wide">
+          <label>レース名</label>
+          <input type="text" id="fRace" placeholder="例：高松宮記念 G1">
+        </div>
+        <div class="form-group">
+          <label>馬券種別</label>
+          <select id="fType">
+            <option>単勝</option><option>複勝</option><option>馬連</option>
+            <option>馬単</option><option>ワイド</option><option>三連複</option>
+            <option>三連単</option><option>WIN5</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>購入金額 (円)</label>
+          <input type="number" id="fBet" placeholder="1000" min="100" step="100">
+        </div>
+        <div class="form-group">
+          <label>払戻金額 (円)</label>
+          <input type="number" id="fReturn" placeholder="0" min="0" step="100">
+        </div>
+        <div class="form-group" style="display:flex;align-items:flex-end;">
+          <button class="btn-add" onclick="addRecord()">＋ 記録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Table -->
+  <div class="section">
+    <div class="section-header">
+      <span>📋</span>
+      <span class="section-title">記録一覧</span>
+    </div>
+    <div class="section-body">
+      <div class="filter-bar">
+        <label>表示：</label>
+        <select id="filterMonth" onchange="renderTable()">
+          <option value="">全期間</option>
+        </select>
+        <label style="margin-left:12px;">馬券種：</label>
+        <select id="filterType" onchange="renderTable()">
+          <option value="">すべて</option>
+          <option>単勝</option><option>複勝</option><option>馬連</option>
+          <option>馬単</option><option>ワイド</option><option>三連複</option>
+          <option>三連単</option><option>WIN5</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>レース名</th>
+              <th>種別</th>
+              <th>購入</th>
+              <th>払戻</th>
+              <th>収支</th>
+              <th>結果</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody">
+          </tbody>
+        </table>
+        <div id="emptyState" class="empty-state">
+          <div class="icon">🏇</div>
+          まだ記録がありません。最初の馬券を記録しましょう！
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// Storage key
+const KEY = 'keiba_records_v1';
+
+let records = [];
+
+function load() {
+  try {
+    const d = localStorage.getItem(KEY);
+    records = d ? JSON.parse(d) : [];
+  } catch(e) { records = []; }
+}
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(records));
+}
+
+function addRecord() {
+  const date = document.getElementById('fDate').value;
+  const race = document.getElementById('fRace').value.trim();
+  const type = document.getElementById('fType').value;
+  const bet = parseInt(document.getElementById('fBet').value) || 0;
+  const ret = parseInt(document.getElementById('fReturn').value) || 0;
+
+  if (!date || !race || bet <= 0) {
+    alert('日付・レース名・購入金額を入力してください');
+    return;
+  }
+
+  records.unshift({
+    id: Date.now(),
+    date, race, type, bet, ret,
+    pl: ret - bet
+  });
+  save();
+  document.getElementById('fRace').value = '';
+  document.getElementById('fBet').value = '';
+  document.getElementById('fReturn').value = '';
+  updateAll();
+}
+
+function deleteRecord(id) {
+  if (!confirm('この記録を削除しますか？')) return;
+  records = records.filter(r => r.id !== id);
+  save();
+  updateAll();
+}
+
+function fmt(n) {
+  const abs = Math.abs(n).toLocaleString();
+  return (n >= 0 ? '+¥' : '-¥') + abs;
+}
+function fmtY(n) {
+  return '¥' + Math.abs(n).toLocaleString();
+}
+
+function getFiltered() {
+  const m = document.getElementById('filterMonth').value;
+  const t = document.getElementById('filterType').value;
+  return records.filter(r => {
+    if (m && !r.date.startsWith(m)) return false;
+    if (t && r.type !== t) return false;
+    return true;
+  });
+}
+
+function updateStats(filtered) {
+  const totalBet = filtered.reduce((s, r) => s + r.bet, 0);
+  const totalRet = filtered.reduce((s, r) => s + r.ret, 0);
+  const pl = totalRet - totalBet;
+  const wins = filtered.filter(r => r.ret > 0).length;
+  const total = filtered.length;
+
+  const plEl = document.getElementById('totalPL');
+  plEl.textContent = (pl >= 0 ? '+¥' : '-¥') + Math.abs(pl).toLocaleString();
+  plEl.className = 'stat-value ' + (pl > 0 ? 'positive' : pl < 0 ? 'negative' : 'neutral');
+
+  const roi = totalBet > 0 ? ((totalRet / totalBet) * 100).toFixed(1) + '%' : '—';
+  const roiEl = document.getElementById('roi');
+  roiEl.textContent = roi;
+  if (totalBet > 0) {
+    const roiNum = totalRet / totalBet * 100;
+    roiEl.className = 'stat-value ' + (roiNum >= 100 ? 'positive' : 'negative');
+  }
+
+  const hitRate = total > 0 ? (wins / total * 100).toFixed(1) + '%' : '—';
+  document.getElementById('hitRate').textContent = hitRate;
+  document.getElementById('hitCount').textContent = wins + '勝 / ' + total + '戦';
+
+  document.getElementById('totalBet').textContent = '¥' + totalBet.toLocaleString();
+  document.getElementById('betCount').textContent = total + '回';
+}
+
+function renderTable() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('recordsBody');
+  const empty = document.getElementById('emptyState');
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    empty.style.display = 'block';
+    updateStats([]);
+    drawChart([]);
+    return;
+  }
+  empty.style.display = 'none';
+  updateStats(filtered);
+
+  filtered.forEach(r => {
+    const pl = r.ret - r.bet;
+    const win = r.ret > 0;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.date}</td>
+      <td>${escHtml(r.race)}</td>
+      <td>${r.type}</td>
+      <td>${fmtY(r.bet)}</td>
+      <td>${fmtY(r.ret)}</td>
+      <td class="${pl >= 0 ? 'amount-pos' : 'amount-neg'}">${fmt(pl)}</td>
+      <td><span class="badge ${win ? 'badge-win' : 'badge-loss'}">${win ? '的中' : 'ハズレ'}</span></td>
+      <td><button class="btn-del" onclick="deleteRecord(${r.id})">削除</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // chart uses all records sorted by date
+  const sorted = [...filtered].sort((a,b) => a.date.localeCompare(b.date));
+  drawChart(sorted);
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function updateMonthFilter() {
+  const months = [...new Set(records.map(r => r.date.slice(0,7)))].sort().reverse();
+  const sel = document.getElementById('filterMonth');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">全期間</option>';
+  months.forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    opt.textContent = m.replace('-', '年') + '月';
+    if (m === cur) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function updateAll() {
+  updateMonthFilter();
+  renderTable();
+}
+
+// --- Chart ---
+let chartAnim = null;
+function drawChart(sorted) {
+  const canvas = document.getElementById('chartCanvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.parentElement.clientWidth;
+  const H = 180;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+  ctx.clearRect(0, 0, W, H);
+
+  if (sorted.length === 0) {
+    ctx.fillStyle = 'rgba(160,144,120,0.3)';
+    ctx.font = '13px Noto Sans JP';
+    ctx.textAlign = 'center';
+    ctx.fillText('記録を追加すると収支グラフが表示されます', W/2, H/2);
+    return;
+  }
+
+  const pad = { l: 60, r: 20, t: 16, b: 32 };
+  const cW = W - pad.l - pad.r;
+  const cH = H - pad.t - pad.b;
+
+  // cumulative PL
+  let cumulative = 0;
+  const points = [{x: 0, y: 0}];
+  sorted.forEach((r, i) => {
+    cumulative += r.pl;
+    points.push({x: i+1, y: cumulative});
+  });
+
+  const maxY = Math.max(...points.map(p => p.y), 0);
+  const minY = Math.min(...points.map(p => p.y), 0);
+  const rangeY = maxY - minY || 1;
+  const toX = i => pad.l + (i / (points.length - 1 || 1)) * cW;
+  const toY = v => pad.t + cH - ((v - minY) / rangeY) * cH;
+
+  // Grid
+  ctx.strokeStyle = 'rgba(58,48,32,0.8)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.t + (cH / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(W - pad.r, y); ctx.stroke();
+    const val = maxY - (rangeY / 4) * i;
+    ctx.fillStyle = 'rgba(160,144,120,0.6)';
+    ctx.font = '10px Noto Sans JP';
+    ctx.textAlign = 'right';
+    ctx.fillText((val >= 0 ? '+' : '') + Math.round(val/100)*100, pad.l - 6, y + 4);
+  }
+
+  // Zero line
+  const zeroY = toY(0);
+  ctx.strokeStyle = 'rgba(201,168,76,0.3)';
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(pad.l, zeroY); ctx.lineTo(W - pad.r, zeroY); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Fill
+  const lastPL = points[points.length-1].y;
+  const grad = ctx.createLinearGradient(0, pad.t, 0, pad.t + cH);
+  if (lastPL >= 0) {
+    grad.addColorStop(0, 'rgba(78,204,163,0.3)');
+    grad.addColorStop(1, 'rgba(78,204,163,0.02)');
+  } else {
+    grad.addColorStop(0, 'rgba(204,80,80,0.02)');
+    grad.addColorStop(1, 'rgba(204,80,80,0.25)');
+  }
+  ctx.beginPath();
+  ctx.moveTo(toX(0), zeroY);
+  points.forEach((p, i) => ctx.lineTo(toX(i), toY(p.y)));
+  ctx.lineTo(toX(points.length-1), zeroY);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Line
+  ctx.strokeStyle = lastPL >= 0 ? '#4ecca3' : '#e07070';
+  ctx.lineWidth = 2;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(toX(i), toY(p.y));
+    else ctx.lineTo(toX(i), toY(p.y));
+  });
+  ctx.stroke();
+
+  // Dots
+  points.forEach((p, i) => {
+    if (i === 0 || i === points.length - 1) {
+      ctx.beginPath();
+      ctx.arc(toX(i), toY(p.y), 4, 0, Math.PI*2);
+      ctx.fillStyle = lastPL >= 0 ? '#4ecca3' : '#e07070';
+      ctx.fill();
+      ctx.strokeStyle = '#0d0a08';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  });
+
+  // End label
+  const endX = toX(points.length-1);
+  const endY = toY(lastPL);
+  ctx.fillStyle = lastPL >= 0 ? '#4ecca3' : '#e07070';
+  ctx.font = 'bold 12px Bebas Neue';
+  ctx.textAlign = lastPL >= 0 ? 'right' : 'right';
+  ctx.fillText(fmt(lastPL), endX - 6, endY - 8);
+}
+
+// Seed data
+const SEED = [
+  {id:1, date:'2026-01-04', race:'中山金杯', type:'ワイド', bet:1500, ret:2650, pl:1150},
+  {id:2, date:'2026-01-11', race:'フェアリーS', type:'単勝', bet:200, ret:0, pl:-200},
+  {id:3, date:'2026-01-12', race:'シンザン記念', type:'単勝', bet:100, ret:2470, pl:2370},
+  {id:4, date:'2026-01-12', race:'シンザン記念', type:'複勝', bet:100, ret:0, pl:-100},
+  {id:5, date:'2026-01-18', race:'京成杯', type:'単勝', bet:400, ret:0, pl:-400},
+  {id:6, date:'2026-01-25', race:'AJCC', type:'単勝', bet:500, ret:0, pl:-500},
+  {id:7, date:'2026-01-25', race:'AJCC', type:'複勝', bet:500, ret:0, pl:-500},
+  {id:8, date:'2026-02-01', race:'根岸S', type:'単勝', bet:500, ret:0, pl:-500},
+  {id:9, date:'2026-02-01', race:'シルクロードS', type:'単勝', bet:500, ret:0, pl:-500},
+  {id:10, date:'2026-02-10', race:'東京新聞杯', type:'ワイド', bet:1000, ret:1520, pl:520},
+  {id:11, date:'2026-02-14', race:'クイーンC', type:'単勝', bet:100, ret:0, pl:-100},
+  {id:12, date:'2026-02-15', race:'共同通信杯', type:'ワイド', bet:200, ret:0, pl:-200},
+  {id:13, date:'2026-02-22', race:'フェブラリーS', type:'単勝', bet:100, ret:0, pl:-100},
+  {id:14, date:'2026-03-01', race:'中山記念', type:'単勝', bet:100, ret:420, pl:320},
+  {id:15, date:'2026-03-07', race:'中山牝馬S', type:'単勝', bet:200, ret:0, pl:-200},
+  {id:16, date:'2026-03-08', race:'弥生賞', type:'馬連', bet:100, ret:1060, pl:960},
+  {id:17, date:'2026-03-15', race:'金鯱賞', type:'単勝', bet:200, ret:0, pl:-200},
+  {id:18, date:'2026-03-15', race:'スプリングS', type:'単勝', bet:200, ret:0, pl:-200},
+];
+
+// Init
+document.addEventListener('DOMContentLoaded', () => {
+  // Set today's date
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('fDate').value = today;
+
+  load();
+  // Load seed if empty
+  if (records.length === 0) {
+    records = [...SEED];
+    save();
+  }
+  updateAll();
+
+  // Redraw chart on resize
+  window.addEventListener('resize', () => {
+    const filtered = getFiltered();
+    const sorted = [...filtered].sort((a,b) => a.date.localeCompare(b.date));
+    drawChart(sorted);
+  });
+});
+</script>
+</body>
+</html>
